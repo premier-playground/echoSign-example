@@ -34,6 +34,7 @@ namespace echoSign_example.Controllers
         private static HttpClient _httpClient = new HttpClient();
         private static string clientId = "CBJCHBCAABAAO5iL7Ahz7onKLwPDXx6Prv0ZD07tz3Fo";
         private static string token = "";
+        private static string docId = "";
 
         [HttpGet]
         [Route("oauthDemo")]
@@ -65,7 +66,8 @@ namespace echoSign_example.Controllers
         [Route("upload")]
         public async Task<TransientDocumentResponse> GetDocumentId(string fileName)
         {
-            string filepath = HttpContext.Current.Server.MapPath("~/Props/test.pdf");
+            // string filepath = HttpContext.Current.Server.MapPath("~/Props/test.pdf");
+            string filepath = HttpContext.Current.Server.MapPath("~/Props/peter.pdf");
             FileStream fileStream = new FileStream(filepath, FileMode.Open, FileAccess.Read);
 
             var apiInstance = new TransientDocumentsApi(new Configuration
@@ -79,6 +81,7 @@ namespace echoSign_example.Controllers
                 // Uploads a document and obtains the document's ID.
                 TransientDocumentResponse result = apiInstance.CreateTransientDocument(authorization, fileStream, null, null, fileName, null);
                 Debug.WriteLine(result);
+                docId = result.TransientDocumentId;
                 return result;
             }
             catch (Exception e)
@@ -91,7 +94,7 @@ namespace echoSign_example.Controllers
 
         [HttpGet]
         [Route("agreement")]
-        public AgreementCreationResponse GetAgreementCreation(string transDocId, string name, string email) 
+        public AgreementCreationResponse GetAgreementCreation(string name, string signerEmail) 
         {
             var apiInstance = new AgreementsApi(new Configuration
             {
@@ -99,17 +102,30 @@ namespace echoSign_example.Controllers
             });
             var authorization = $"Bearer {token}";
             
-            AgreementCcInfo participant = new AgreementCcInfo(email, null, null);
-            List<AgreementCcInfo> ccs = new List<AgreementCcInfo>() {participant};
-            IO.Swagger.model.agreements.FileInfo transientDocument = new IO.Swagger.model.agreements.FileInfo(null, transDocId, null);
+            // List of emails
+            AgreementCcInfo observer = new AgreementCcInfo(signerEmail, null, null);
+            List<AgreementCcInfo> ccs = new List<AgreementCcInfo>() {observer};
+            
+            // List of participants
+            ParticipantSetMemberInfo participant = new ParticipantSetMemberInfo() { Email = signerEmail};
+            ParticipantSetInfo particapents = new ParticipantSetInfo()
+            {
+                MemberInfos = new List<ParticipantSetMemberInfo>(){participant},
+                Name = name,
+                Order = 1,
+                Role = ParticipantSetInfo.RoleEnum.SIGNER,
+            };
+
+            IO.Swagger.model.agreements.FileInfo transientDocument = new IO.Swagger.model.agreements.FileInfo(null, null, null, docId, null);
 
             var agreementInfo = new AgreementCreationInfo()
             {
                 Ccs = ccs,
                 Name = name,
-                FileInfos = new List<IO.Swagger.model.agreements.FileInfo>() { transientDocument },
+                FileInfos = new List<IO.Swagger.model.agreements.FileInfo>() {transientDocument},
                 SignatureType = AgreementCreationInfo.SignatureTypeEnum.ESIGN,
-                State = AgreementCreationInfo.StateEnum.INPROCESS
+                State = AgreementCreationInfo.StateEnum.INPROCESS,
+                ParticipantSetsInfo = new List<ParticipantSetInfo>() {particapents}
             };
 
             try
