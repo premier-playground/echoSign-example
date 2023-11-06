@@ -14,6 +14,8 @@ using IO.Swagger.model.transientDocuments;
 using System.Diagnostics;
 using System.Net;
 using Microsoft.AspNetCore.Http;
+using IO.Swagger.model.megaSigns;
+using System.Drawing.Printing;
 
 namespace echoSign_example.Controllers
 {
@@ -138,6 +140,54 @@ namespace echoSign_example.Controllers
             catch (Exception e)
             {
                 Debug.Print("Exception when calling AgreementsApi.CreateAgreement: " + e.Message);
+            }
+            return null;
+        }
+
+        [HttpGet]
+        [Route("myAgreements")]
+        public UserAgreements GetUserAgreements()
+        {
+            var apiInstance = new AgreementsApi(new Configuration
+            {
+                BasePath = "https://api.na3.adobesign.com/api/rest/v6"
+            });
+            var authorization = $"Bearer {token}";
+            
+            try
+            {
+                // Retrieves agreements for the user.
+                UserAgreements result = apiInstance.GetAgreements(authorization);
+                Debug.WriteLine(result);
+                return result;
+            }
+            catch (Exception e)
+            {
+                Debug.Print("Exception when calling AgreementsApi.GetAgreements: " + e.Message);
+            }
+            return null;
+        }
+
+        [HttpGet]
+        [Route("getAgreement")]
+        public AgreementInfo GetAgreement(string agreementId)
+        {
+            var apiInstance = new AgreementsApi(new Configuration
+            {
+                BasePath = "https://api.na3.adobesign.com/api/rest/v6"
+            });
+            var authorization = $"Bearer {token}";
+
+            try
+            {
+                // Retrieves agreements for the user.
+                AgreementInfo result = apiInstance.GetAgreementInfo(authorization, agreementId);
+                Debug.WriteLine(result);
+                return result;
+            }
+            catch (Exception e)
+            {
+                Debug.Print("Exception when calling AgreementsApi.GetAgreements: " + e.Message);
             }
             return null;
         }
