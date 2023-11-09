@@ -36,7 +36,6 @@ namespace echoSign_example.Controllers
         private static HttpClient _httpClient = new HttpClient();
         private static string clientId = "CBJCHBCAABAAO5iL7Ahz7onKLwPDXx6Prv0ZD07tz3Fo";
         private static string token = "";
-        private static string docId = "";
 
         [HttpGet]
         [Route("oauthDemo")]
@@ -64,12 +63,20 @@ namespace echoSign_example.Controllers
             return responseTxt;
         }
 
+
         [HttpGet]
-        [Route("upload")]
-        public async Task<TransientDocumentResponse> GetDocumentId(string fileName)
+        [Route("sign")]
+        public SigningUrlResponse SigningUrl(string filname, string agreementName, string signerEmail)
+        {
+            string docId = GetDocumentId(filname).Result;
+            string agreementId = GetAgreementCreation(agreementName, signerEmail, docId).Id;
+            return GetSigningUrl(agreementId);
+        }
+
+        private async Task<string> GetDocumentId(string fileName)
         {
             // string filepath = HttpContext.Current.Server.MapPath("~/Props/test.pdf");
-            string filepath = HttpContext.Current.Server.MapPath("~/Props/peter.pdf");
+            string filepath = HttpContext.Current.Server.MapPath("~/Props/test.pdf");
             FileStream fileStream = new FileStream(filepath, FileMode.Open, FileAccess.Read);
 
             var apiInstance = new TransientDocumentsApi(new Configuration
@@ -83,8 +90,8 @@ namespace echoSign_example.Controllers
                 // Uploads a document and obtains the document's ID.
                 TransientDocumentResponse result = apiInstance.CreateTransientDocument(authorization, fileStream, null, null, fileName, null);
                 Debug.WriteLine(result);
-                docId = result.TransientDocumentId;
-                return result;
+                return result.TransientDocumentId;
+                // return result;
             }
             catch (Exception e)
             {
@@ -94,9 +101,7 @@ namespace echoSign_example.Controllers
             return null;
         }
 
-        [HttpGet]
-        [Route("agreement")]
-        public AgreementCreationResponse GetAgreementCreation(string name, string signerEmail) 
+        private AgreementCreationResponse GetAgreementCreation(string name, string signerEmail, string docId) 
         {
             var apiInstance = new AgreementsApi(new Configuration
             {
@@ -140,6 +145,28 @@ namespace echoSign_example.Controllers
             catch (Exception e)
             {
                 Debug.Print("Exception when calling AgreementsApi.CreateAgreement: " + e.Message);
+            }
+            return null;
+        }
+
+        private SigningUrlResponse GetSigningUrl(string agreementId)
+        {
+            var apiInstance = new AgreementsApi(new Configuration
+            {
+                BasePath = "https://api.na3.adobesign.com/api/rest/v6"
+            });
+            var authorization = $"Bearer {token}";
+
+            try
+            {
+                // Retrieves the URL for the e-sign page for the current signer(s) of an agreement.
+                SigningUrlResponse result = apiInstance.GetSigningUrl(authorization, agreementId, null, null);
+                Debug.WriteLine(result);
+                return result;
+            }
+            catch (Exception e)
+            {
+                Debug.Print("Exception when calling AgreementsApi.GetSigningUrl: " + e.Message);
             }
             return null;
         }
